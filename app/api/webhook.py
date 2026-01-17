@@ -1,21 +1,13 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
+from pydantic import BaseModel
 from app.services.review_service import ReviewService
 
-router = APIRouter(prefix="/webhook")
+router = APIRouter()
 
-@router.post("/github")
-async def github_webhook(req: Request):
-    payload = await req.json()
+class ReviewRequest(BaseModel):
+    repo_url: str
 
-    if payload.get("action") != "opened":
-        return {"ignored": True}
-
-    repo = payload["repository"]["full_name"]
-    pr = payload["pull_request"]["number"]
-    clone_url = payload["repository"]["clone_url"]
-
+@router.post("/review")
+def review_repo(payload: ReviewRequest):
     service = ReviewService()
-    result = service.run(clone_url)
-
-    # TODO: post PR comment using GitHub token
-    return result
+    return service.run(payload.repo_url)
